@@ -18,7 +18,7 @@ sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
 apt update
 
-# Install build dependencies for Python packages
+# Install build dependencies for Python packages by ali
 echo "📦 Installing build dependencies for Python packages..."
 apt install -y git python3-pip build-essential wget python3-dev libxml2-dev libxslt1-dev \
     zlib1g-dev libsasl2-dev libldap2-dev libpq-dev libjpeg-dev libpng-dev \
