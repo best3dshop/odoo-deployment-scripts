@@ -7,6 +7,13 @@ echo "🛠️ بدء تنصيب كامل لمكونات Odoo 17 في LXC واح�
 ############################################
 echo "📦 تحديث النظام وتثبيت المتطلبات الأساسية..."
 apt update && apt upgrade -y
+
+# إضافة مستودع PostgreSQL الرسمي
+echo "📦 إضافة مستودع PostgreSQL الرسمي..."
+sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+apt update
+
 apt install -y git python3-pip build-essential wget python3-dev libxml2-dev libxslt1-dev \
     zlib1g-dev libsasl2-dev libldap2-dev libpq-dev libjpeg-dev libpng-dev \
     node-less libjpeg8-dev liblcms2-dev libblas-dev libatlas-base-dev libssl-dev \
