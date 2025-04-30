@@ -15,13 +15,9 @@ add-apt-repository -y ppa:deadsnakes/ppa
 apt update
 apt install -y python3.11 python3.11-dev python3.11-venv python3.11-distutils
 
-# Create symbolic links to make Python 3.11 the default
-update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
-update-alternatives --set python3 /usr/bin/python3.11
-
-# Fix apt_pkg issue after Python version change
-echo "📦 Fixing apt_pkg after Python version change..."
-apt install -y python3-apt --reinstall
+# Instead of changing system default Python, we'll use Python 3.11 for Odoo only
+# This way system tools that depend on the default Python will continue to work
+echo "📦 Keeping system Python intact to avoid apt_pkg errors..."
 
 # Install gnupg first to avoid apt-key errors
 echo "📦 Installing gnupg first to avoid apt-key errors..."
@@ -74,7 +70,7 @@ systemctl restart postgresql
 
 ############################################
 echo "🚀 Setting up Redis..."
-sed -i "s/^bind .*/bind 0.0.0.0/" /etc/redis/redis.conf
+sed -i "s/^bind .*/bind 127.0.0.1/" /etc/redis/redis.conf
 sed -i "s/^protected-mode yes/protected-mode no/" /etc/redis/redis.conf
 # Configure Redis for better performance
 sed -i "s/^# maxmemory .*/maxmemory 1gb/" /etc/redis/redis.conf
@@ -89,7 +85,7 @@ odoo = host=127.0.0.1 port=5432 dbname=postgres
 
 [pgbouncer]
 listen_port = 6432
-listen_addr = 0.0.0.0
+listen_addr = 127.0.0.1
 auth_type = md5
 auth_file = /etc/pgbouncer/userlist.txt
 admin_users = postgres
@@ -115,7 +111,9 @@ adduser --system --quiet --shell=/bin/bash --home=$ODOO_HOME --group $ODOO_USER
 git clone https://www.github.com/odoo/odoo --depth 1 --branch $ODOO_VERSION $ODOO_HOME/odoo-server
 chown -R $ODOO_USER:$ODOO_USER $ODOO_HOME/odoo-server
 
-python3 -m venv $ODOO_HOME/venv
+# Create a virtual environment with Python 3.11 explicitly
+echo "📦 Creating Python 3.11 virtual environment for Odoo..."
+python3.11 -m venv $ODOO_HOME/venv
 source $ODOO_HOME/venv/bin/activate
 pip install --upgrade pip wheel setuptools
 
@@ -197,7 +195,7 @@ SyslogIdentifier=odoo
 PermissionsStartOnly=true
 User=$ODOO_USER
 Group=$ODOO_USER
-ExecStart=$ODOO_HOME/venv/bin/python3 $ODOO_HOME/odoo-server/odoo-bin -c $ODOO_CONF
+ExecStart=$ODOO_HOME/venv/bin/python3.11 $ODOO_HOME/odoo-server/odoo-bin -c $ODOO_CONF
 StandardOutput=journal+console
 LimitNOFILE=65536
 LimitNPROC=4096
