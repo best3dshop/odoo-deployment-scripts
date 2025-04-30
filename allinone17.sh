@@ -105,9 +105,9 @@ pip install --upgrade pip wheel setuptools
 
 # Pre-install problematic packages with compatible versions
 echo "📦 Pre-installing compatible versions of problematic packages..."
-pip install greenlet==1.1.3 
+pip install greenlet==2.0.2
 pip install Cython==0.29.36
-pip install gevent==21.12.0
+pip install gevent==22.10.2
 pip install psycopg2-binary==2.9.9
 pip install lxml==4.9.3
 pip install Pillow==9.5.0
