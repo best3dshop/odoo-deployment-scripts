@@ -38,7 +38,7 @@ apt install -y git python3-pip build-essential wget python3-dev libxml2-dev libx
     node-less libjpeg8-dev liblcms2-dev libblas-dev libatlas-base-dev libssl-dev \
     libffi-dev libmysqlclient-dev libxrender1 xfonts-75dpi xfonts-base \
     python3-venv wkhtmltopdf npm nodejs curl htop net-tools lsb-release \
-    python3-certbot-nginx redis-server pgbouncer ruby ruby-dev make gcc \
+    python3-certbot-nginx redis-server ruby ruby-dev make gcc \
     postgresql-15 postgresql-client-15 python3-wheel python3-setuptools \
     python3-dev pkg-config libc-dev \
     python3-cffi libev-dev cython3
@@ -78,30 +78,7 @@ sed -i "s/^# maxmemory-policy .*/maxmemory-policy allkeys-lru/" /etc/redis/redis
 systemctl enable redis-server && systemctl restart redis-server
 
 ############################################
-echo "🚀 Setting up PgBouncer..."
-cat <<EOF > /etc/pgbouncer/pgbouncer.ini
-[databases]
-odoo = host=127.0.0.1 port=5432 dbname=postgres
-
-[pgbouncer]
-listen_port = 6432
-listen_addr = 127.0.0.1
-auth_type = md5
-auth_file = /etc/pgbouncer/userlist.txt
-admin_users = postgres
-pool_mode = session
-max_client_conn = 1000
-default_pool_size = 200
-server_idle_timeout = 240
-EOF
-
-echo '"odoo" "odoo"' > /etc/pgbouncer/userlist.txt
-chmod 640 /etc/pgbouncer/userlist.txt
-chown postgres:postgres /etc/pgbouncer/userlist.txt
-systemctl enable pgbouncer && systemctl restart pgbouncer
-
-############################################
-echo "📂 Setting up Odoo 17..."
+echo "Setting up Odoo 17..."
 ODOO_VERSION="17.0"
 ODOO_USER="odoo"
 ODOO_HOME="/opt/odoo"
@@ -148,7 +125,7 @@ cat <<EOF > $ODOO_CONF
 [options]
 admin_passwd = $ADMIN_PASSWORD
 db_host = 127.0.0.1
-db_port = 6432
+db_port = 5432
 db_user = odoo
 db_password = odoo
 addons_path = $ODOO_HOME/odoo-server/addons
@@ -156,8 +133,8 @@ logfile = /var/log/odoo/odoo.log
 logrotate = True
 
 # Performance optimizations for 500 users
-workers = 8
-max_cron_threads = 2
+workers = 3
+max_cron_threads = 1
 limit_memory_hard = 2684354560
 limit_memory_soft = 2147483648
 limit_request = 8192
