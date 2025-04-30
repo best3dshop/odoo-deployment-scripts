@@ -19,6 +19,10 @@ apt install -y python3.11 python3.11-dev python3.11-venv python3.11-distutils
 update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 update-alternatives --set python3 /usr/bin/python3.11
 
+# Fix apt_pkg issue after Python version change
+echo "📦 Fixing apt_pkg after Python version change..."
+apt install -y python3-apt --reinstall
+
 # Install gnupg first to avoid apt-key errors
 echo "📦 Installing gnupg first to avoid apt-key errors..."
 apt install -y gnupg gnupg1 gnupg2
