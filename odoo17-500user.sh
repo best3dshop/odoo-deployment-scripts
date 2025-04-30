@@ -133,8 +133,8 @@ logfile = /var/log/odoo/odoo.log
 logrotate = True
 
 # Performance optimizations for 500 users
-workers = 3
-max_cron_threads = 1
+workers = 6
+max_cron_threads = 2
 limit_memory_hard = 2684354560
 limit_memory_soft = 2147483648
 limit_request = 8192
@@ -199,5 +199,5 @@ systemctl enable odoo
 systemctl start odoo
 
 echo "✅ Odoo installation completed with all required components to support 500 users!"
-echo "📊 Odoo is now available on port 80"
+echo "📊 Odoo is now available on port 8069"
 echo "⚠️ Make sure to save the admin password located in /root/odoo_admin_password.txt"
