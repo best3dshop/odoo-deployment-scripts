@@ -18,18 +18,27 @@ sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
 apt update
 
+# Install build dependencies for Python packages
+echo "📦 Installing build dependencies for Python packages..."
 apt install -y git python3-pip build-essential wget python3-dev libxml2-dev libxslt1-dev \
     zlib1g-dev libsasl2-dev libldap2-dev libpq-dev libjpeg-dev libpng-dev \
     node-less libjpeg8-dev liblcms2-dev libblas-dev libatlas-base-dev libssl-dev \
     libffi-dev libmysqlclient-dev libxrender1 xfonts-75dpi xfonts-base \
     python3-venv wkhtmltopdf npm nodejs curl htop net-tools lsb-release \
     python3-certbot-nginx redis-server pgbouncer ruby ruby-dev make gcc \
-    postgresql-16 postgresql-client-16
+    postgresql-16 postgresql-client-16 python3-wheel python3-setuptools \
+    libcython3-dev libc-dev python3-dev pkg-config \
+    # Additional packages for building Python extensions
+    python3-cffi libev-dev cython3
 
 ############################################
 echo "📂 Setting up PostgreSQL..."
-sudo -u postgres createuser -s odoo
-sudo -u postgres psql -c "ALTER USER odoo WITH PASSWORD 'odoo';"
+# Change to a directory the postgres user can access
+cd /tmp
+
+# Create user and set password from a location postgres user can access
+sudo -u postgres psql -c "CREATE USER odoo WITH CREATEDB CREATEROLE PASSWORD 'odoo';"
+sudo -u postgres psql -c "ALTER USER odoo WITH SUPERUSER;"
 
 # Optimize PostgreSQL performance to support 500 users
 cat <<EOF >> /etc/postgresql/16/main/postgresql.conf
@@ -92,8 +101,26 @@ chown -R $ODOO_USER:$ODOO_USER $ODOO_HOME/odoo-server
 
 python3 -m venv $ODOO_HOME/venv
 source $ODOO_HOME/venv/bin/activate
-pip install wheel setuptools
-pip install -r $ODOO_HOME/odoo-server/requirements.txt
+pip install --upgrade pip wheel setuptools
+
+# Pre-install problematic packages with compatible versions
+echo "📦 Pre-installing compatible versions of problematic packages..."
+pip install greenlet==1.1.3 
+pip install Cython==0.29.36
+pip install gevent==21.12.0
+pip install psycopg2-binary==2.9.9
+pip install lxml==4.9.3
+pip install Pillow==9.5.0
+pip install Werkzeug==2.0.3
+pip install cryptography==38.0.4
+pip install PyPDF2==2.12.1
+pip install reportlab==3.6.13
+
+# Modified requirements installation with retries and fallback
+echo "📦 Installing Odoo requirements..."
+pip install -r $ODOO_HOME/odoo-server/requirements.txt || pip install --no-deps -r $ODOO_HOME/odoo-server/requirements.txt
+
+# Additional packages
 pip install redis pyOpenSSL psycogreen
 
 # Create a strong admin password
