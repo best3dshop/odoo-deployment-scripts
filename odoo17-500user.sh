@@ -193,63 +193,6 @@ git clone https://github.com/CybroOdoo/CybroAddons.git --depth 1 --branch $ODOO_
 sed -i "s#addons_path = .*#addons_path = $ODOO_HOME/odoo-server/addons,$ODOO_HOME/queue,$ODOO_HOME/server-tools,$ODOO_HOME/cybro-addons#" $ODOO_CONF
 chown -R $ODOO_USER:$ODOO_USER $ODOO_HOME
 
-# Set up nginx as a proxy for Odoo
-apt install -y nginx
-cat <<EOF > /etc/nginx/sites-available/odoo
-upstream odoo {
-    server 127.0.0.1:8069;
-}
-
-upstream odoochat {
-    server 127.0.0.1:8072;
-}
-
-server {
-    listen 80;
-    server_name _;
-
-    proxy_read_timeout 720s;
-    proxy_connect_timeout 720s;
-    proxy_send_timeout 720s;
-
-    proxy_buffers 16 64k;
-    proxy_buffer_size 128k;
-
-    client_max_body_size 100m;
-
-    location / {
-        proxy_pass http://odoo;
-        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503;
-        proxy_redirect off;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-
-    location /longpolling {
-        proxy_pass http://odoochat;
-        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503;
-        proxy_redirect off;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-
-    location ~* ^/web/static/ {
-        proxy_cache_valid 200 60m;
-        proxy_buffering on;
-        expires 864000;
-        proxy_pass http://odoo;
-    }
-}
-EOF
-
-ln -sf /etc/nginx/sites-available/odoo /etc/nginx/sites-enabled/
-rm -f /etc/nginx/sites-enabled/default
-systemctl enable nginx && systemctl restart nginx
-
 systemctl daemon-reexec
 systemctl daemon-reload
 systemctl enable odoo
