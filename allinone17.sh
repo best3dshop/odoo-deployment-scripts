@@ -29,7 +29,6 @@ apt install -y git python3-pip build-essential wget python3-dev libxml2-dev libx
     python3-certbot-nginx redis-server pgbouncer ruby ruby-dev make gcc \
     postgresql-15 postgresql-client-15 python3-wheel python3-setuptools \
     python3-dev pkg-config libc-dev \
-    # Additional packages for building Python extensions
     python3-cffi libev-dev cython3
 
 ############################################
