@@ -15,7 +15,8 @@ apt install -y gnupg gnupg1 gnupg2
 # Add official PostgreSQL repository
 echo "📦 Adding official PostgreSQL repository..."
 sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+# Using the recommended way instead of deprecated apt-key
+wget --quiet -O /etc/apt/trusted.gpg.d/postgresql.gpg https://www.postgresql.org/media/keys/ACCC4CF8.asc
 apt update
 
 # Install build dependencies for Python packages by ali
@@ -27,7 +28,7 @@ apt install -y git python3-pip build-essential wget python3-dev libxml2-dev libx
     python3-venv wkhtmltopdf npm nodejs curl htop net-tools lsb-release \
     python3-certbot-nginx redis-server pgbouncer ruby ruby-dev make gcc \
     postgresql-15 postgresql-client-15 python3-wheel python3-setuptools \
-    libcython3-dev libc-dev python3-dev pkg-config \
+    python3-dev pkg-config libc-dev \
     # Additional packages for building Python extensions
     python3-cffi libev-dev cython3
 
