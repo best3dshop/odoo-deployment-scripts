@@ -8,6 +8,17 @@ echo "🛠️ Starting complete installation of Odoo 17 components in a single L
 echo "📦 Updating system and installing basic requirements..."
 apt update && apt upgrade -y
 
+# Install Python 3.11 specifically
+echo "📦 Installing Python 3.11..."
+apt install -y software-properties-common
+add-apt-repository -y ppa:deadsnakes/ppa
+apt update
+apt install -y python3.11 python3.11-dev python3.11-venv python3.11-distutils
+
+# Create symbolic links to make Python 3.11 the default
+update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+update-alternatives --set python3 /usr/bin/python3.11
+
 # Install gnupg first to avoid apt-key errors
 echo "📦 Installing gnupg first to avoid apt-key errors..."
 apt install -y gnupg gnupg1 gnupg2
