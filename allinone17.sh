@@ -1,15 +1,19 @@
 #!/bin/bash
-# إنشاء سكربت موحد لتنصيب جميع المكونات داخل LXC واحدة مناسبة لـ 500 مستخدم
+# Create a unified script to install all components in a single LXC suitable for 500 users
 set -e
 
-echo "🛠️ بدء تنصيب كامل لمكونات Odoo 17 في LXC واحدة..."
+echo "🛠️ Starting complete installation of Odoo 17 components in a single LXC..."
 
 ############################################
-echo "📦 تحديث النظام وتثبيت المتطلبات الأساسية..."
+echo "📦 Updating system and installing basic requirements..."
 apt update && apt upgrade -y
 
-# إضافة مستودع PostgreSQL الرسمي
-echo "📦 إضافة مستودع PostgreSQL الرسمي..."
+# Install gnupg first to avoid apt-key errors
+echo "📦 Installing gnupg first to avoid apt-key errors..."
+apt install -y gnupg gnupg1 gnupg2
+
+# Add official PostgreSQL repository
+echo "📦 Adding official PostgreSQL repository..."
 sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
 apt update
@@ -18,18 +22,18 @@ apt install -y git python3-pip build-essential wget python3-dev libxml2-dev libx
     zlib1g-dev libsasl2-dev libldap2-dev libpq-dev libjpeg-dev libpng-dev \
     node-less libjpeg8-dev liblcms2-dev libblas-dev libatlas-base-dev libssl-dev \
     libffi-dev libmysqlclient-dev libxrender1 xfonts-75dpi xfonts-base \
-    python3-venv wkhtmltopdf npm nodejs curl htop net-tools gnupg2 lsb-release \
+    python3-venv wkhtmltopdf npm nodejs curl htop net-tools lsb-release \
     python3-certbot-nginx redis-server pgbouncer ruby ruby-dev make gcc \
     postgresql-15 postgresql-client-15
 
 ############################################
-echo "📂 إعداد PostgreSQL..."
+echo "📂 Setting up PostgreSQL..."
 sudo -u postgres createuser -s odoo
 sudo -u postgres psql -c "ALTER USER odoo WITH PASSWORD 'odoo';"
 
-# تحسين أداء PostgreSQL لدعم 500 مستخدم
+# Optimize PostgreSQL performance to support 500 users
 cat <<EOF >> /etc/postgresql/15/main/postgresql.conf
-# تحسينات الأداء لـ Odoo
+# Performance optimizations for Odoo
 shared_buffers = '1GB'
 work_mem = '128MB'
 maintenance_work_mem = '256MB'
@@ -44,16 +48,16 @@ EOF
 systemctl restart postgresql
 
 ############################################
-echo "🚀 إعداد Redis..."
+echo "🚀 Setting up Redis..."
 sed -i "s/^bind .*/bind 0.0.0.0/" /etc/redis/redis.conf
 sed -i "s/^protected-mode yes/protected-mode no/" /etc/redis/redis.conf
-# تكوين Redis لأداء أفضل
+# Configure Redis for better performance
 sed -i "s/^# maxmemory .*/maxmemory 1gb/" /etc/redis/redis.conf
 sed -i "s/^# maxmemory-policy .*/maxmemory-policy allkeys-lru/" /etc/redis/redis.conf
 systemctl enable redis-server && systemctl restart redis-server
 
 ############################################
-echo "🚀 إعداد PgBouncer..."
+echo "🚀 Setting up PgBouncer..."
 cat <<EOF > /etc/pgbouncer/pgbouncer.ini
 [databases]
 odoo = host=127.0.0.1 port=5432 dbname=postgres
@@ -76,7 +80,7 @@ chown postgres:postgres /etc/pgbouncer/userlist.txt
 systemctl enable pgbouncer && systemctl restart pgbouncer
 
 ############################################
-echo "📂 إعداد Odoo 17..."
+echo "📂 Setting up Odoo 17..."
 ODOO_VERSION="17.0"
 ODOO_USER="odoo"
 ODOO_HOME="/opt/odoo"
@@ -92,10 +96,10 @@ pip install wheel setuptools
 pip install -r $ODOO_HOME/odoo-server/requirements.txt
 pip install redis pyOpenSSL psycogreen
 
-# إنشاء كلمة مرور قوية للمشرف
+# Create a strong admin password
 ADMIN_PASSWORD=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 20)
-echo "كلمة مرور مشرف Odoo هي: $ADMIN_PASSWORD"
-echo "تم حفظ كلمة المرور في /root/odoo_admin_password.txt"
+echo "Odoo admin password is: $ADMIN_PASSWORD"
+echo "Password has been saved to /root/odoo_admin_password.txt"
 echo "$ADMIN_PASSWORD" > /root/odoo_admin_password.txt
 chmod 600 /root/odoo_admin_password.txt
 
@@ -110,7 +114,7 @@ addons_path = $ODOO_HOME/odoo-server/addons
 logfile = /var/log/odoo/odoo.log
 logrotate = True
 
-# تحسينات الأداء لـ 500 مستخدم
+# Performance optimizations for 500 users
 workers = 8
 max_cron_threads = 2
 limit_memory_hard = 2684354560
@@ -126,7 +130,7 @@ longpolling_port = 8072
 server_wide_modules = web,queue_job
 queue_job_channels = root:4
 
-# إعدادات التخزين المؤقت والأداء
+# Cache and performance settings
 session_redis = True
 session_redis_host = 127.0.0.1
 session_redis_port = 6379
@@ -161,17 +165,17 @@ RestartSec=5s
 WantedBy=multi-user.target
 EOF
 
-# إضافة مكتبات إضافية مفيدة لـ Odoo
+# Add additional useful libraries for Odoo
 cd $ODOO_HOME
 git clone https://github.com/OCA/queue --depth 1 --branch $ODOO_VERSION queue
 git clone https://github.com/OCA/server-tools --depth 1 --branch $ODOO_VERSION server-tools
 git clone https://github.com/CybroOdoo/CybroAddons.git --depth 1 --branch $ODOO_VERSION cybro-addons
 
-# تحديث مسار الإضافات
+# Update addons path
 sed -i "s#addons_path = .*#addons_path = $ODOO_HOME/odoo-server/addons,$ODOO_HOME/queue,$ODOO_HOME/server-tools,$ODOO_HOME/cybro-addons#" $ODOO_CONF
 chown -R $ODOO_USER:$ODOO_USER $ODOO_HOME
 
-# إعداد nginx كواجهة proxy للـ Odoo
+# Set up nginx as a proxy for Odoo
 apt install -y nginx
 cat <<EOF > /etc/nginx/sites-available/odoo
 upstream odoo {
@@ -233,6 +237,6 @@ systemctl daemon-reload
 systemctl enable odoo
 systemctl start odoo
 
-echo "✅ اكتمل تنصيب Odoo مع جميع المكونات المطلوبة لدعم 500 مستخدم!"
-echo "📊 Odoo متاح الآن على المنفذ 80"
-echo "⚠️ تأكد من حفظ كلمة مرور المشرف الموجودة في /root/odoo_admin_password.txt"
+echo "✅ Odoo installation completed with all required components to support 500 users!"
+echo "📊 Odoo is now available on port 80"
+echo "⚠️ Make sure to save the admin password located in /root/odoo_admin_password.txt"
