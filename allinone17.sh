@@ -15,8 +15,9 @@ apt install -y gnupg gnupg1 gnupg2
 # Add official PostgreSQL repository
 echo "📦 Adding official PostgreSQL repository..."
 sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-# Using the recommended way instead of deprecated apt-key
-wget --quiet -O /etc/apt/trusted.gpg.d/postgresql.gpg https://www.postgresql.org/media/keys/ACCC4CF8.asc
+# Using updated method to add the PostgreSQL key
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
 apt update
 
 # Install build dependencies for Python packages by ali
