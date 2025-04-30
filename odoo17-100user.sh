@@ -106,6 +106,17 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
+# Add additional useful libraries for Odoo
+cd $ODOO_HOME
+git clone https://github.com/OCA/queue --depth 1 --branch $ODOO_VERSION queue
+git clone https://github.com/OCA/server-tools --depth 1 --branch $ODOO_VERSION server-tools
+git clone https://github.com/CybroOdoo/CybroAddons.git --depth 1 --branch $ODOO_VERSION cybro-addons
+
+# Update addons path
+sed -i "s#addons_path = .*#addons_path = $ODOO_HOME/odoo-server/addons,$ODOO_HOME/queue,$ODOO_HOME/server-tools,$ODOO_HOME/cybro-addons#" $ODOO_CONF
+chown -R $ODOO_USER:$ODOO_USER $ODOO_HOME
+
+
 systemctl daemon-reload
 systemctl enable odoo
 systemctl start odoo
