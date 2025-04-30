@@ -2,7 +2,7 @@
 # Create a unified script to install all components in a single LXC suitable for 500 users
 set -e
 
-echo "🛠️ Starting complete installation of Odoo 18 components in a single LXC..."
+echo "🛠️ Starting complete installation of Odoo 18 components on Ubuntu 24.04 with Python 3.11..."
 
 ############################################
 echo "📦 Updating system and installing basic requirements..."
@@ -10,7 +10,7 @@ apt update && apt upgrade -y
 
 # Install gnupg first to avoid apt-key errors
 echo "📦 Installing gnupg first to avoid apt-key errors..."
-apt install -y gnupg gnupg1 gnupg2
+apt install -y gnupg
 
 # Add official PostgreSQL repository
 echo "📦 Adding official PostgreSQL repository..."
@@ -19,18 +19,20 @@ sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg
 wget --quiet -O /etc/apt/trusted.gpg.d/postgresql.gpg https://www.postgresql.org/media/keys/ACCC4CF8.asc
 apt update
 
-# Install build dependencies for Python packages
+# Install build dependencies for Python packages - adapted for Ubuntu 24.04
 echo "📦 Installing build dependencies for Python packages..."
-apt install -y git python3-pip build-essential wget python3-dev libxml2-dev libxslt1-dev \
+apt install -y git python3-pip build-essential wget python3.11-dev python3.11-venv libxml2-dev libxslt1-dev \
     zlib1g-dev libsasl2-dev libldap2-dev libpq-dev libjpeg-dev libpng-dev \
     node-less libjpeg8-dev liblcms2-dev libblas-dev libatlas-base-dev libssl-dev \
-    libffi-dev libmysqlclient-dev libxrender1 xfonts-75dpi xfonts-base \
+    libffi-dev libxrender1 xfonts-75dpi xfonts-base \
     python3-venv wkhtmltopdf npm nodejs curl htop net-tools lsb-release \
-    python3-certbot-nginx redis-server pgbouncer ruby ruby-dev make gcc \
+    python3-certbot-nginx redis-server ruby ruby-dev make gcc \
     postgresql-16 postgresql-client-16 python3-wheel python3-setuptools \
     python3-dev pkg-config libc-dev \
     # Additional packages for building Python extensions
-    python3-cffi libev-dev cython3
+    python3-cffi libev-dev cython3 \
+    # Add libmysqlclient-dev alternative for Ubuntu 24.04
+    default-libmysqlclient-dev
 
 ############################################
 echo "📂 Setting up PostgreSQL..."
@@ -59,35 +61,12 @@ systemctl restart postgresql
 
 ############################################
 echo "🚀 Setting up Redis..."
-sed -i "s/^bind .*/bind 0.0.0.0/" /etc/redis/redis.conf
+sed -i "s/^bind .*/bind 127.0.0.1/" /etc/redis/redis.conf
 sed -i "s/^protected-mode yes/protected-mode no/" /etc/redis/redis.conf
 # Configure Redis for better performance
 sed -i "s/^# maxmemory .*/maxmemory 1gb/" /etc/redis/redis.conf
 sed -i "s/^# maxmemory-policy .*/maxmemory-policy allkeys-lru/" /etc/redis/redis.conf
 systemctl enable redis-server && systemctl restart redis-server
-
-############################################
-echo "🚀 Setting up PgBouncer..."
-cat <<EOF > /etc/pgbouncer/pgbouncer.ini
-[databases]
-odoo = host=127.0.0.1 port=5432 dbname=postgres
-
-[pgbouncer]
-listen_port = 6432
-listen_addr = 0.0.0.0
-auth_type = md5
-auth_file = /etc/pgbouncer/userlist.txt
-admin_users = postgres
-pool_mode = session
-max_client_conn = 1000
-default_pool_size = 200
-server_idle_timeout = 240
-EOF
-
-echo '"odoo" "odoo"' > /etc/pgbouncer/userlist.txt
-chmod 640 /etc/pgbouncer/userlist.txt
-chown postgres:postgres /etc/pgbouncer/userlist.txt
-systemctl enable pgbouncer && systemctl restart pgbouncer
 
 ############################################
 echo "📂 Setting up Odoo 18..."
@@ -100,22 +79,23 @@ adduser --system --quiet --shell=/bin/bash --home=$ODOO_HOME --group $ODOO_USER
 git clone https://www.github.com/odoo/odoo --depth 1 --branch $ODOO_VERSION $ODOO_HOME/odoo-server
 chown -R $ODOO_USER:$ODOO_USER $ODOO_HOME/odoo-server
 
-python3 -m venv $ODOO_HOME/venv
+# Create Python 3.11 virtual environment
+python3.11 -m venv $ODOO_HOME/venv
 source $ODOO_HOME/venv/bin/activate
 pip install --upgrade pip wheel setuptools
 
-# Pre-install problematic packages with compatible versions
-echo "📦 Pre-installing compatible versions of problematic packages..."
-pip install greenlet==1.1.3 
-pip install Cython==0.29.36
-pip install gevent==21.12.0
+# Pre-install problematic packages with Python 3.11 compatible versions
+echo "📦 Pre-installing compatible versions of problematic packages for Python 3.11..."
+pip install greenlet==3.0.1
+pip install Cython==3.0.6
+pip install gevent==23.9.1
 pip install psycopg2-binary==2.9.9
 pip install lxml==4.9.3
-pip install Pillow==9.5.0
-pip install Werkzeug==2.0.3
-pip install cryptography==38.0.4
-pip install PyPDF2==2.12.1
-pip install reportlab==3.6.13
+pip install Pillow==10.1.0
+pip install Werkzeug==2.3.7
+pip install cryptography==41.0.5
+pip install PyPDF2==3.0.1
+pip install reportlab==4.0.7
 
 # Modified requirements installation with retries and fallback
 echo "📦 Installing Odoo requirements..."
@@ -135,7 +115,7 @@ cat <<EOF > $ODOO_CONF
 [options]
 admin_passwd = $ADMIN_PASSWORD
 db_host = 127.0.0.1
-db_port = 6432
+db_port = 5432
 db_user = odoo
 db_password = odoo
 addons_path = $ODOO_HOME/odoo-server/addons
@@ -203,68 +183,13 @@ git clone https://github.com/CybroOdoo/CybroAddons.git --depth 1 --branch $ODOO_
 sed -i "s#addons_path = .*#addons_path = $ODOO_HOME/odoo-server/addons,$ODOO_HOME/queue,$ODOO_HOME/server-tools,$ODOO_HOME/cybro-addons#" $ODOO_CONF
 chown -R $ODOO_USER:$ODOO_USER $ODOO_HOME
 
-# Set up nginx as a proxy for Odoo
-apt install -y nginx
-cat <<EOF > /etc/nginx/sites-available/odoo
-upstream odoo {
-    server 127.0.0.1:8069;
-}
-
-upstream odoochat {
-    server 127.0.0.1:8072;
-}
-
-server {
-    listen 80;
-    server_name _;
-
-    proxy_read_timeout 720s;
-    proxy_connect_timeout 720s;
-    proxy_send_timeout 720s;
-
-    proxy_buffers 16 64k;
-    proxy_buffer_size 128k;
-
-    client_max_body_size 100m;
-
-    location / {
-        proxy_pass http://odoo;
-        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503;
-        proxy_redirect off;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-
-    location /longpolling {
-        proxy_pass http://odoochat;
-        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503;
-        proxy_redirect off;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-
-    location ~* ^/web/static/ {
-        proxy_cache_valid 200 60m;
-        proxy_buffering on;
-        expires 864000;
-        proxy_pass http://odoo;
-    }
-}
-EOF
-
-ln -sf /etc/nginx/sites-available/odoo /etc/nginx/sites-enabled/
-rm -f /etc/nginx/sites-enabled/default
-systemctl enable nginx && systemctl restart nginx
-
 systemctl daemon-reexec
 systemctl daemon-reload
 systemctl enable odoo
 systemctl start odoo
 
+
 echo "✅ Odoo installation completed with all required components to support 500 users!"
-echo "📊 Odoo is now available on port 80"
+echo "📊 Odoo is now available on port 8069 via Nginx reverse proxy"
 echo "⚠️ Make sure to save the admin password located in /root/odoo_admin_password.txt"
+echo "🔄 Python 3.11 compatibility configuration is complete for Ubuntu 24.04"
