@@ -75,9 +75,7 @@ db_password = odoo
 addons_path = $ODOO_HOME/odoo-server/addons
 logfile = /var/log/odoo/odoo.log
 logrotate = True
-http_port = 8069
-proxy_mode = True
-
+# Performance optimizations for 500 users
 workers = 2
 max_cron_threads = 1
 limit_memory_hard = 1024000000
@@ -86,21 +84,42 @@ limit_request = 2048
 limit_time_cpu = 60
 limit_time_real = 120
 db_maxconn = 64
+http_port = 8069
+proxy_mode = True
+gevent_port = 8072
+longpolling_port = 8072
+server_wide_modules = web,queue_job
+queue_job_channels = root:2
+
+# Cache and performance settings
+session_redis = True
+session_redis_host = 127.0.0.1
+session_redis_port = 6379
+session_redis_prefix = odoo_session:
+redis_host = 127.0.0.1
+redis_port = 6379
 EOF
 
 mkdir -p /var/log/odoo && chown $ODOO_USER:$ODOO_USER /var/log/odoo
 
 cat <<EOF > /etc/systemd/system/odoo.service
 [Unit]
-Description=Odoo Lightweight
-After=postgresql.service redis-server.service
+Description=Odoo
+Requires=network.target postgresql.service redis-server.service
+After=network.target postgresql.service redis-server.service
 
 [Service]
 Type=simple
+SyslogIdentifier=odoo
+PermissionsStartOnly=true
 User=$ODOO_USER
 Group=$ODOO_USER
 ExecStart=$ODOO_HOME/venv/bin/python3.11 $ODOO_HOME/odoo-server/odoo-bin -c $ODOO_CONF
-Restart=always
+StandardOutput=journal+console
+LimitNOFILE=65536
+LimitNPROC=4096
+Restart=on-failure
+RestartSec=5s
 
 [Install]
 WantedBy=multi-user.target
