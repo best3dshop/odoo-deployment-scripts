@@ -69,7 +69,7 @@ EOF
 systemctl restart postgresql
 
 ############################################
-cho "🚀 Setting up Redis..."
+echo "🚀 Setting up Redis..."
 sed -i "s/^bind .*/bind 127.0.0.1/" /etc/redis/redis.conf
 sed -i "s/^protected-mode yes/protected-mode no/" /etc/redis/redis.conf
 # Configure Redis for better performance
