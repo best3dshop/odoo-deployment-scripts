@@ -2,7 +2,7 @@
 # Create a unified script to install all components in a single LXC suitable for 500 users
 set -e
 
-echo "🛠️ Starting complete installation of Odoo 18 components on Ubuntu 24.04 with Python 3.11..."
+echo "🛠️ Starting complete installation of Odoo 18 components on Ubuntu 24.04 with Python 3.12..."
 
 ############################################
 echo "📦 Updating system and installing basic requirements..."
@@ -22,14 +22,14 @@ apt update
 
 # Install build dependencies for Python packages - adapted for Ubuntu 24.04
 echo "📦 Installing build dependencies for Python packages..."
-apt install -y git python3-pip build-essential wget python3.11-dev python3.11-venv libxml2-dev libxslt1-dev \
+apt install -y git python3-pip build-essential wget python3-dev python3-venv libxml2-dev libxslt1-dev \
     zlib1g-dev libsasl2-dev libldap2-dev libpq-dev libjpeg-dev libpng-dev \
     node-less libjpeg8-dev liblcms2-dev libblas-dev libatlas-base-dev libssl-dev \
     libffi-dev libxrender1 xfonts-75dpi xfonts-base \
     python3-venv wkhtmltopdf npm nodejs curl htop net-tools lsb-release \
     python3-certbot-nginx redis-server ruby ruby-dev make gcc \
     postgresql-16 postgresql-client-16 python3-wheel python3-setuptools \
-    python3-dev pkg-config libc-dev \
+    python3-dev pkg-config libc6-dev \
     # Additional packages for building Python extensions
     python3-cffi libev-dev cython3 \
     # Add libmysqlclient-dev alternative for Ubuntu 24.04
@@ -80,13 +80,13 @@ adduser --system --quiet --shell=/bin/bash --home=$ODOO_HOME --group $ODOO_USER
 git clone https://www.github.com/odoo/odoo --depth 1 --branch $ODOO_VERSION $ODOO_HOME/odoo-server
 chown -R $ODOO_USER:$ODOO_USER $ODOO_HOME/odoo-server
 
-# Create Python 3.11 virtual environment
-python3.11 -m venv $ODOO_HOME/venv
+# Create Python virtual environment
+python3 -m venv $ODOO_HOME/venv
 source $ODOO_HOME/venv/bin/activate
 pip install --upgrade pip wheel setuptools
 
-# Pre-install problematic packages with Python 3.11 compatible versions
-echo "📦 Pre-installing compatible versions of problematic packages for Python 3.11..."
+# Pre-install problematic packages with Python 3.12 compatible versions
+echo "📦 Pre-installing compatible versions of problematic packages for Python 3.12..."
 pip install greenlet==3.0.1
 pip install Cython==3.0.6
 pip install gevent==23.9.1
@@ -193,4 +193,4 @@ systemctl start odoo
 echo "✅ Odoo installation completed with all required components to support 500 users!"
 echo "📊 Odoo is now available on port 8069 via Nginx reverse proxy"
 echo "⚠️ Make sure to save the admin password located in /root/odoo_admin_password.txt"
-echo "🔄 Python 3.11 compatibility configuration is complete for Ubuntu 24.04"
+echo "🔄 Python 3.12 compatibility configuration is complete for Ubuntu 24.04"
