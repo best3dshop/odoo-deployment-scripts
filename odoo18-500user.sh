@@ -10,13 +10,14 @@ apt update && apt upgrade -y
 
 # Install gnupg first to avoid apt-key errors
 echo "📦 Installing gnupg first to avoid apt-key errors..."
-apt install -y gnupg
+apt install -y gnupg curl ca-certificates
 
 # Add official PostgreSQL repository
 echo "📦 Adding official PostgreSQL repository..."
 sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-# Using the recommended way instead of deprecated apt-key
-wget --quiet -O /etc/apt/trusted.gpg.d/postgresql.gpg https://www.postgresql.org/media/keys/ACCC4CF8.asc
+# Using the recommended method to import the PostgreSQL GPG key
+curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
 apt update
 
 # Install build dependencies for Python packages - adapted for Ubuntu 24.04
