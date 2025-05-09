@@ -97,6 +97,7 @@ pip install Werkzeug==2.3.7
 pip install cryptography==41.0.5
 pip install PyPDF2==3.0.1
 pip install reportlab==4.0.7
+pip install qifparse
 
 # Modified requirements installation with retries and fallback
 echo "📦 Installing Odoo requirements..."

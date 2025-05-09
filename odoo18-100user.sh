@@ -89,6 +89,7 @@ pip install Werkzeug==2.3.7
 pip install cryptography==41.0.5
 pip install PyPDF2==3.0.1
 pip install reportlab==4.0.7
+pip install qifparse
 
 pip install -r $ODOO_HOME/odoo-server/requirements.txt || pip install --no-deps -r $ODOO_HOME/odoo-server/requirements.txt
 pip install redis pyOpenSSL psycogreen

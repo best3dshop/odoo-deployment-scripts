@@ -37,7 +37,7 @@ apt install -y git python3-pip build-essential wget python3-dev libxml2-dev libx
     zlib1g-dev libsasl2-dev libldap2-dev libpq-dev libjpeg-dev libpng-dev \
     node-less libjpeg8-dev liblcms2-dev libblas-dev libatlas-base-dev libssl-dev \
     libffi-dev libmysqlclient-dev libxrender1 xfonts-75dpi xfonts-base \
-    python3-venv wkhtmltopdf npm nodejs curl htop net-tools lsb-release \
+    python3-venv npm nodejs curl htop net-tools lsb-release \
     python3-certbot-nginx redis-server ruby ruby-dev make gcc \
     postgresql-15 postgresql-client-15 python3-wheel python3-setuptools \
     python3-dev pkg-config libc-dev \
@@ -124,20 +124,20 @@ addons_path = $ODOO_HOME/odoo-server/addons
 logfile = /var/log/odoo/odoo.log
 logrotate = True
 # Performance optimizations for 100 users
-workers = 2
-max_cron_threads = 1
-limit_memory_hard = 1024000000
-limit_memory_soft = 800000000
-limit_request = 2048
-limit_time_cpu = 60
-limit_time_real = 120
-db_maxconn = 64
+#workers = 2
+#max_cron_threads = 1
+#limit_memory_hard = 1024000000
+#limit_memory_soft = 800000000
+#limit_request = 2048
+#limit_time_cpu = 60
+#limit_time_real = 120
+#db_maxconn = 64
 http_port = 8069
 proxy_mode = True
 gevent_port = 8072
 longpolling_port = 8072
-server_wide_modules = web,queue_job
-queue_job_channels = root:2
+#server_wide_modules = web,queue_job
+#queue_job_channels = root:2
 
 # Cache and performance settings
 session_redis = True
@@ -164,8 +164,6 @@ User=$ODOO_USER
 Group=$ODOO_USER
 ExecStart=$ODOO_HOME/venv/bin/python3.11 $ODOO_HOME/odoo-server/odoo-bin -c $ODOO_CONF
 StandardOutput=journal+console
-LimitNOFILE=65536
-LimitNPROC=4096
 Restart=on-failure
 RestartSec=5s
 
@@ -174,10 +172,10 @@ WantedBy=multi-user.target
 EOF
 
 # Add additional useful libraries for Odoo
-cd $ODOO_HOME
-git clone https://github.com/OCA/queue --depth 1 --branch $ODOO_VERSION queue
-git clone https://github.com/OCA/server-tools --depth 1 --branch $ODOO_VERSION server-tools
-git clone https://github.com/CybroOdoo/CybroAddons.git --depth 1 --branch $ODOO_VERSION cybro-addons
+#cd $ODOO_HOME
+#git clone https://github.com/OCA/queue --depth 1 --branch $ODOO_VERSION queue
+#git clone https://github.com/OCA/server-tools --depth 1 --branch $ODOO_VERSION server-tools
+#git clone https://github.com/CybroOdoo/CybroAddons.git --depth 1 --branch $ODOO_VERSION cybro-addons
 
 # Update addons path
 sed -i "s#addons_path = .*#addons_path = $ODOO_HOME/odoo-server/addons,$ODOO_HOME/queue,$ODOO_HOME/server-tools,$ODOO_HOME/cybro-addons#" $ODOO_CONF
